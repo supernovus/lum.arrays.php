@@ -180,7 +180,7 @@ class Arrays
       $out = array();
       for ($j = 0; $j < $count; $j++)
       {
-        if ($b{$j} == '1') $out[] = $in[$j];
+        if ($b[$j] == '1') $out[] = $in[$j];
       }
       if (count($out) >= $minLength)
       {
