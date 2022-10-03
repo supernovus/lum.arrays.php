@@ -190,13 +190,20 @@ class Arrays
     return $return; 
   }
 
-  public static function is_assoc ($array)
+  public static function is_assoc (&$array): bool
   {
     if (!is_array($array) || empty($array))
     {
       return false;
     }
     return array_keys($array) !== range(0, count($array)-1);
+  }
+
+  public static function is_flat (&$array): bool
+  {
+    if (!is_array($array)) return false;
+    if (empty($array)) return true;
+    return array_keys($array) === range(0, count($array)-1);
   }
 
   // TODO: add permutations and other useful helpers.
