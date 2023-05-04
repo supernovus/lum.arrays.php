@@ -3,26 +3,20 @@
 namespace Lum;
 
 /**
- * Some useful utility functions that work on Arrays.
- *
- * The easiest way to use this is:
- *   use Lum\Arrays as Arr;
- * Then just call the functions like:
- *   Arr::swap($array, 2, 4);
- *
+ * Some useful static utility functions that work on Arrays.
  */
 class Arrays
 {
   /**
    * Swap the positions of elements in an array.
    *
-   * This operates directly on the array, and does not return anything.
-   *
-   * @param array   $array       The array to operate on.
+   * @param array   &$array      The array to operate on.
    * @param mixed   $pos1        First position or key to swap.
    * @param mixed   $pos2        Second position or key to swap.
+   *
+   * @return void
    */
-  public static function swap (&$array, $pos1, $pos2)
+  public static function swap (array &$array, $pos1, $pos2)
   {
     $temp = $array[$pos2];
     $array[$pos2] = $array[$pos1];
@@ -32,15 +26,18 @@ class Arrays
   /**
    * Rename an array key.
    *
-   * This operates directly on the array. 
-   * It returns true on success, and false on failure.
-   *
-   * @param array   $array      The array to operate on.
+   * @param array   &$array     The array to operate on.
    * @param string  $curname    Current key name.
    * @param string  $newname    New key name.
    * @param bool    $overwrite  Optional, overwrite existing keys.
+   *
+   * @return bool  `true` on success, `false` on failure.
    */
-  public static function rename_key (&$array, $curname, $newname, $overwrite=False)
+  public static function rename_key 
+  ( array &$array, 
+    string $curname, 
+    string $newname, 
+    bool $overwrite=false): bool
   {
     if (array_key_exists($oldname, $array))
     {
@@ -48,10 +45,83 @@ class Arrays
       {
         $array[$newname] = $array[$curname];
         unset($array[$curname]);
-        return True;
+        return true;
       }
     }
-    return False;
+    return false;
+  }
+
+  /**
+   * Remove a value from an array.
+   *
+   * Every matching instance of the value will be removed.
+   * For associative arrays it uses `unset()`.
+   * For flat lists it uses `array_splice()`.
+   *
+   * @param  array  &$array  Array to remove the value from.
+   * @param  mixed  $value   Value to remove from array.
+   * @param  bool   $strict  Use strict comparisons.
+   *                         Default: `true`.
+   *
+   * @return int  The number of values removed.
+   */
+  public static function remove
+  (
+    array &$array, 
+    mixed $value, 
+    bool $strict=true): int
+  {
+	  $removed = 0;
+
+    if (array_is_list($array))
+    {
+      while (($key = array_search($value, $array, $strict)) !== false)
+      {
+        array_splice($array, $key, 1);
+        ++$removed;
+      }
+    }
+    else
+    {
+      foreach(array_keys($array, $value, $strict) as $key)
+      {
+        unset($array[$key]);
+        ++$removed;
+      }
+    }
+
+    return $removed;
+  }
+
+  /**
+   * Should `remove_all()` use strict checking? Default: `true`
+   */
+  public static bool $remove_all_strict = true;
+
+  /**
+   * Remove multiple values from an array.
+   *
+   * This is a wrapper around the `remove()` function, and calls
+   * it for each value passed.
+   *
+   * @param array  &$array  The array to remove values from.
+   * @param mixed  ...$values  Values to remove from the array.
+   *
+   * @return int  The total number of values removed.
+   *              May be more than the number of `$values` passed if
+   *              any of those values were found more than once.
+   *              May also be less if some of those values weren't found.
+   *
+   */
+  public static function remove_all(array &$array, ...$values): int
+  {
+    $strict = self::$remove_all_strict;
+    $removed = 0;
+    foreach ($values as $value)
+    {
+      $removed += self::remove($array, $value, $strict);
+    }
+    return $removed;
   }
 
   /**
@@ -60,13 +130,14 @@ class Arrays
    * Taken from http://www.theserverpages.com/php/manual/en/ref.array.php
    * Reformatted to fit with Lum.
    *
-   * @param array  $arrays   An array of arrays to get the product of.
-   * @return array           An array of arrays representing the product.
+   * @param array  $arrays An array of arrays to get the product of.
+   *
+   * @return array  An array of arrays representing the product.
    */
   public static function cartesian_product($arrays) 
   {
     //returned array...
-    $cartesic = array();
+    $cartesic = [];
    
     //calculate expected size of cartesian array...
     $size = (sizeof($arrays)>0) ? 1 : 0;
@@ -76,7 +147,7 @@ class Arrays
     }
     for ($i=0; $i<$size; $i++) 
     {
-      $cartesic[$i] = array();
+      $cartesic[$i] = [];
        
       for ($j=0; $j<sizeof($arrays); $j++)
       {
@@ -106,16 +177,18 @@ class Arrays
    * Based on example from:
    * stackoverflow.com/questions/7327318/power-set-elements-of-a-certain-length
    *
-   * @param array   $array      Array to find subsets of.
-   * @param int     $size       Size of subsets we want.
+   * @param array  $array      Array to find subsets of.
+   * @param int    $size       Size of subsets we want.
+   *
+   * @return array  An array of subsets.
    */
   public static function subsets ($array, $size)
   {
-    if (count($array) < $size) return array();
-    if (count($array) == $size) return array($array);
+    if (count($array) < $size) return [];
+    if (count($array) == $size) return [$array];
 
     $x = array_pop($array);
-    if (is_null($x)) return array();
+    if (is_null($x)) return [];
 
     return array_merge
     ( 
@@ -131,7 +204,8 @@ class Arrays
    *
    * @param mixed  $x       Item to merge into arrays.
    * @param array  $arrays  Array of arrays to merge $x into.
-   * @return array          A copy of original array, with merged data.
+   *
+   * @return array  A copy of `$arrays`, with merged data.
    */
   public static function merge_into_each ($x, $arrays)
   {
@@ -148,18 +222,19 @@ class Arrays
    * Based on code from:
    * http://bohuco.net/blog/2008/11/php-arrays-power-set-and-all-permutations/
    *
-   * @param array  $array   The input array to generate powerset from.
-   * @return array          An array of arrays representing the powerset.
+   * @param array  $array  The input array to generate powerset from.
+   *
+   * @return array  An array of arrays representing the powerset.
    */
-  public static function powerset ($array)
+  public static function powerset (array $array): array
   {
-    $results = array(array());
+    $results = [[]];
     foreach ($array as $j => $element)
     {
       $num = count($results);
       for ($i=0; $i<$num; $i++)
       {
-        array_push($results, array_merge(array($element), $results[$i]));
+        array_push($results, array_merge([$element], $results[$i]));
       }
     }
     return $results;
@@ -169,15 +244,15 @@ class Arrays
    * Another powerset algorithm.
    * Found in a few places on the net.
    */
-  public static function powerset2 ($in, $minLength=1)
+  public static function powerset2 (array $in, int $minLength=1): array
   {
     $count = count($in);
     $members = pow(2,$count);
-    $return = array();
+    $return = [];
     for ($i = 0; $i < $members; $i++)
     {
       $b = sprintf("%0".$count."b",$i);
-      $out = array();
+      $out = [];
       for ($j = 0; $j < $count; $j++)
       {
         if ($b[$j] == '1') $out[] = $in[$j];
@@ -190,20 +265,20 @@ class Arrays
     return $return; 
   }
 
+  /**
+   * Is passed variable an associative array?
+   */
   public static function is_assoc (&$array): bool
   {
-    if (!is_array($array) || empty($array))
-    {
-      return false;
-    }
-    return array_keys($array) !== range(0, count($array)-1);
+    return (is_array($array) && !array_is_list($array));
   }
 
+  /**
+   * Is passed variable a flat list?
+   */
   public static function is_flat (&$array): bool
   {
-    if (!is_array($array)) return false;
-    if (empty($array)) return true;
-    return array_keys($array) === range(0, count($array)-1);
+    return (is_array($array) && array_is_list($array));
   }
 
   // TODO: add permutations and other useful helpers.
