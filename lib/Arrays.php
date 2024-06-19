@@ -39,7 +39,7 @@ class Arrays
     string $newname, 
     bool $overwrite=false): bool
   {
-    if (array_key_exists($oldname, $array))
+    if (array_key_exists($curname, $array))
     {
       if ($overwrite || !isset($array[$newname]))
       {
@@ -279,6 +279,51 @@ class Arrays
   public static function is_flat (&$array): bool
   {
     return (is_array($array) && array_is_list($array));
+  }
+
+  /**
+   * Get a normalized offset index position.
+   * 
+   * @param array $array Array the position is for.
+   * @param int $pos The position index.
+   * 
+   * If this is a negative number, it will represent an offset from the
+   * end of the array.
+   * 
+   * @param bool $overflow Allow overflowing indexes?
+   * 
+   * If true, any $pos value that is greater than the last real
+   * index value in the array will be modified to start from the beginning
+   * of the array (e.g. given an array with 5 items, a pos of 5 would
+   * be normalized to 0, 6 to 1, and so on.)
+   * 
+   * If false, any $pos value greather the last real index will be
+   * normalized to the last real index. 
+   * 
+   * @return mixed 
+   */
+  public static function pos_for(array $array, int $pos, bool $overflow)
+  {
+    $ac = count($array);
+
+    while ($pos >= $ac)
+    { // Index overflows the actual size.
+      if ($overflow)
+      { // Overflow back to the start of the array.
+        $pos = $pos - $ac;
+      }
+      else
+      { // Assume anything too big goes at the end.
+        $pos = -1;
+      }
+    }
+
+    while ($pos < 0)
+    { // Convert negative numbers to an offset from the end.
+      $pos = $ac + $pos;
+    }
+
+    return $pos;
   }
 
   // TODO: add permutations and other useful helpers.
